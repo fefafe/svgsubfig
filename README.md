@@ -2,7 +2,7 @@
 
 A python package for swift arrangement of raster images and vector graphics into a single figure based on SVG.
 
-The package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals
+The package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals.
 
 ## Basic usage
 
@@ -24,16 +24,16 @@ Use relative filenames for the individual images (the directory of the config fi
 }
 ```
 
-The key of the config file are as follows:
+The keys of the config file are as follows:
 
 - ``font-family``: Typeface used in the SVG file for text.
 - ``font-size``: Size of the labeling of the images in **pt**.
 - ``gab-between``: Spacing between the subimages in **mm**.
-- ``gap-label``: Spacing between labels and lower boundary of the images
-- ``images``: Array of file paths of the images to include into the figure
+- ``gap-label``: Spacing between labels and lower boundary of the images.
+- ``images``: Array of file paths of the images to include into the figure.
 - ``width``: Width of the figure.
 
-Create a Python script as follow to merge the images into the figure.
+Create a Python script as below to merge the images into the figure.
 
 The function for file conversion from SVG into PDF and PNG  ``convert_svg`` requires [Inkscape](https://inkscape.org/) to be installed and accessible on PATH.
 
