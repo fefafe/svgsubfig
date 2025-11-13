@@ -165,6 +165,14 @@ class SVGSubFigure:
 
             if pth_subfig.suffix == ".svg":
                 img_svg = etree.parse(pth_subfig)
+                for node in img_svg.xpath("//*[@id]"):
+                    id_old = node.get("id")
+                    id_new = f"img-{no}-" + id_old
+                    node.set("id", id_new)
+                    for node in img_svg.xpath(f"//*[@*[contains(.,'#{id_old}')]]"):
+                        for key, value in node.items():
+                            if id_old in value:
+                                node.set(key, value.replace(id_old, id_new))
                 img = etree.SubElement(svg, f"{{{self.NS_SVG}}}g", id=f"subfig-{no}")
                 img.append(img_svg.getroot())
                 img.set(
