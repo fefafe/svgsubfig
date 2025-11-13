@@ -192,7 +192,7 @@ class SVGSubFigure:
                 )
                 img.set(
                     f"{{{self.NS_XLINK}}}href",
-                    f"data:image/{format};base64,{img_encoded.decode("utf-8")}",
+                    f"data:image/{format};base64,{img_encoded.decode('utf-8')}",
                 )
                 img.set("width", str(w_frac[no]))
                 img.set("height", str(w_frac[no] / a_single[no]))
