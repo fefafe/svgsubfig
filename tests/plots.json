@@ -1,0 +1,11 @@
+{
+    "gap-between": 5,
+    "gap-label": 2,
+    "width": 120,
+    "font-size": 9,
+    "font-family": "Inter",
+    "images": [
+        "../assets/plot_1.svg",
+        "../assets/plot_2.png"
+    ]
+}
