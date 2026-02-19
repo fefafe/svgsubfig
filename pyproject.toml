@@ -1,16 +1,41 @@
 [project]
 name = "svgsubfig"
-authors = [{ name = "Felix Faber", email = "felix.faber@ovgu.de" }]
 version = "0.1.0"
-requires-python = ">=3.11"
-dependencies = ["lxml", "pillow"]
+description = "Compose raster and vector images to publication-ready figures for scientific journals"
+authors = [{ name = "Felix Faber", email = "felix.faber@ovgu.de" }]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["lxml (>=6.0.2,<7.0.0)", "pillow (>=12.1.1,<13.0.0)"]
+license = "MIT"
+
+[project.urls]
+repository = "https://github.com/fefafe/svgsubfig"
+
+[tool.poetry]
+packages = [{ include = "svgsubfig", from = "src" }]
+
+[tool.black]
+line-length = 90
+
+[tool.flake8]
+max-line-length = 90
 
 [tool.isort]
+profile = "hug"
+src_paths = ["src", "tests"]
 multi_line_output = 3
+line_length = 90
 include_trailing_comma = true
-force_grid_wrap = 0
-line_length = 88
-profile = "black"
 
-[project.optional-dependencies]
-dev = ["lxml-stubs"]
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "types-lxml (>=2026.1.1,<2027.0.0)",
+    "sphinx (>=9.1.0,<10.0.0)",
+    "pydata-sphinx-theme (>=0.16.1,<0.17.0)",
+    "recommonmark (>=0.7.1,<0.8.0)",
+    "pytest (>=9.0.2,<10.0.0)"
+]
