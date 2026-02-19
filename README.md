@@ -10,6 +10,14 @@ Font family, size and gaps can be adjusted based on a JSON configuration. An exa
 
 ## Basic usage
 
+### Installation
+
+``svgsubfig`` can be installed using pip:
+
+```console
+pip install svgsubfig
+```
+
 ### Configuration
 
 Create a JSON configuration file with the following structure, use relative filenames for the individual (sub-)images (the directory of the config file acts as base directory).
@@ -48,7 +56,7 @@ To create the final figure using the JSON configuration, a small ``svgsubfig`` c
 
 To use the ``svgsubfig`` module to create the final figure file, use following command in your terminal:
 
-```terminal
+```console
 python -m svgsubfig [--noconvert] CONFIG_PATH
 ```
 
