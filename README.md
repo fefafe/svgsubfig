@@ -2,13 +2,17 @@
 
 A python package for swift arrangement of raster images and vector graphics into a single figure based on SVG.
 
-The package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals.
+This package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals. A label is inserted below each subimage, e.g. ``(a)``, ``(b)``, ...
+
+Font family, size and gaps can be adjusted based on a JSON configuration. An example figure created with ``svgsubfig`` could look like this:
+
+![example figure created with svgsubfig](./assets/plots.png)
 
 ## Basic usage
 
-Create a JSON configuration file with the following structure. The name of the config file will be used as name for the SVG figure file, which will be created in the same directory.
+### Configuration
 
-Use relative filenames for the individual images (the directory of the config file acts as base directory).
+Create a JSON configuration file with the following structure, use relative filenames for the individual (sub-)images (the directory of the config file acts as base directory).
 
 ```json
 {
@@ -24,18 +28,33 @@ Use relative filenames for the individual images (the directory of the config fi
 }
 ```
 
-The keys of the config file are as follows:
+Following keys are available for the config file:
 
 - ``font-family``: Typeface used in the SVG file for text.
 - ``font-size``: Size of the labeling of the images in **pt**.
 - ``gab-between``: Spacing between the subimages in **mm**.
-- ``gap-label``: Spacing between labels and lower boundary of the images.
+- ``gap-label``: Spacing between labels and lower boundary of the images in **mm**.
 - ``images``: Array of file paths of the images to include into the figure.
-- ``width``: Width of the figure.
+- ``index-offset``: Offset of the first subimage index, e.g. if ``index-offset = 3``, the first label will be ``(d)``
+- ``width``: Width of the figure in **mm**.
 
-Create a Python script as below to merge the images into the figure.
+To use automatic conversion of the created SVG figure file into PDF and PNG file formats, [Inkscape](https://inkscape.org/) needs to be installed and accessible on PATH.
 
-The function for file conversion from SVG into PDF and PNG  ``convert_svg`` requires [Inkscape](https://inkscape.org/) to be installed and accessible on PATH.
+### Figure composition
+
+To create the final figure using the JSON configuration, a small ``svgsubfig`` command line utility can be used, but also scripting is possible.
+
+#### Command line utility
+
+To use the ``svgsubfig`` module to create the final figure file, use following command in your terminal:
+
+```terminal
+python -m svgsubfig [--noconvert] CONFIG_PATH
+```
+
+Replace ``CONFIG_PATH`` with the path of the JSON config file. Option ``--noconvert`` prevents conversion of the created SVG into PDF and PNG with Inkscape, which is useful in case Inkscape is not installed, or manual edits on the created SVG file are necessary.
+
+#### Script
 
 ```python
 import svgsubfig.utility as util
