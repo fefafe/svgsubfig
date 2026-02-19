@@ -10,7 +10,7 @@ This package is focussed on the preparation of high quality figures that consist
 
 Font family, size and gaps can be adjusted based on a JSON configuration. An example figure created with ``svgsubfig`` could look like this:
 
-![example figure created with svgsubfig](./assets/plots.png)
+![example figure created with svgsubfig](./assets/plots_bg-white.png)
 
 ## Basic usage
 
