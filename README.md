@@ -1,5 +1,7 @@
 # svgsubfig
 
+![PyPI - Version](https://img.shields.io/pypi/v/svgsubfig)
+
 A python package for swift arrangement of raster images and vector graphics into a single figure based on SVG.
 
 This package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals. A label is inserted below each subimage, e.g. ``(a)``, ``(b)``, ...
