@@ -1,13 +1,11 @@
 import base64
-import subprocess
 import json
-import svgsubfig.utility as util
-
-from typing import Union, Self, Final
+import subprocess
 from pathlib import Path
+from typing import Final, Self, Union
+
 from lxml import etree
 from PIL import Image
-
 
 # =============================================================================
 
@@ -52,7 +50,7 @@ class SVGSubFigure:
             ins._gap_between = data["gap-between"] * MM2PX
             ins._gap_label = data["gap-label"] * MM2PX
             ins._width = data["width"] * MM2PX
-            
+
             if "index-offset" in data:
                 ins._index_offset = data["index-offset"] * MM2PX
 
@@ -166,8 +164,12 @@ class SVGSubFigure:
                     w = float(vb[0].split(" ")[2])  # type: ignore
                     h = float(vb[0].split(" ")[3])  # type: ignore
                 else:
-                    w = float(img_svg.xpath('//*[name()="svg"]/@width')[0])  # type: ignore
-                    h = float(img_svg.xpath('//*[name()="svg"]/@height')[0])  # type: ignore
+                    w = float(
+                        img_svg.xpath('//*[name()="svg"]/@width')[0]
+                    )  # type: ignore
+                    h = float(
+                        img_svg.xpath('//*[name()="svg"]/@height')[0]
+                    )  # type ignore
 
             w_single.append(w)
             h_single.append(h)
