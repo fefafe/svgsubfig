@@ -1,6 +1,8 @@
 # svgsubfig
 
 ![PyPI - Version](https://img.shields.io/pypi/v/svgsubfig)
+![GitHub License](https://img.shields.io/github/license/fefafe/svgsubfig)
+![Code style - black](https://img.shields.io/badge/code%20style-black-black)
 
 A python package for swift arrangement of raster images and vector graphics into a single figure based on SVG.
 
