@@ -3,16 +3,20 @@ import subprocess
 import json
 import svgsubfig.utility as util
 
-from typing import Union
+from typing import Union, Self, Final
 from pathlib import Path
 from lxml import etree
 from PIL import Image
 
 
+# =============================================================================
+
+# auxiliary type for numeric values
 numeric = Union[float, int]
 
-MM2PX = 3.77952755906
-PT2PX = 4 / 3
+# constants for unit conversion (mm -> px, pt -> px)
+MM2PX: Final[float] = 3.77952755906
+PT2PX: Final[float] = 4 / 3
 
 
 class SVGSubFigure:
@@ -31,19 +35,26 @@ class SVGSubFigure:
         self._font_family = "Arial, Helvetica, sans-serif"
         self._gap_between = 20
         self._gap_label = 10
+        self._index_offset = 0
+        self._width = 180
+        self._height = 90
 
     @classmethod
-    def from_json(cls, pth: Path) -> SVGSubFigure:
+    def from_json(cls, pth: Path) -> Self:
+        """Creates a ``SVGSubFigure`` instance from JSON configuration file."""
 
         ins = cls()
 
         with pth.open(encoding="utf-8", mode="r") as f:
             data = json.load(f)
-            ins._font_size = data["font-size"] * util.PT2PX
+            ins._font_size = data["font-size"] * PT2PX
             ins._font_family = data["font-family"]
-            ins._gap_between = data["gap-between"] * util.MM2PX
-            ins._gap_label = data["gap-label"] * util.MM2PX
-            ins._width = data["width"] * util.MM2PX
+            ins._gap_between = data["gap-between"] * MM2PX
+            ins._gap_label = data["gap-label"] * MM2PX
+            ins._width = data["width"] * MM2PX
+            
+            if "index-offset" in data:
+                ins._index_offset = data["index-offset"] * MM2PX
 
             if "images" in data:
                 for pth_img in data["images"]:
@@ -52,8 +63,17 @@ class SVGSubFigure:
         return ins
 
     @property
+    def children(self) -> list[Path]:
+        """Collection of ``Path`` instances, each referencing a subfigure"""
+        return self._children
+
+    @children.setter
+    def children(self, f: list[Path]):
+        self._children = f
+
+    @property
     def font_family(self) -> str:
-        """Label font family string."""
+        """Label font family string"""
         return self._font_family
 
     @font_family.setter
@@ -62,7 +82,7 @@ class SVGSubFigure:
 
     @property
     def font_size(self) -> numeric:
-        """Label font size in px."""
+        """Label font size in [px]"""
         return self._font_size
 
     @font_size.setter
@@ -71,7 +91,7 @@ class SVGSubFigure:
 
     @property
     def gap_between(self) -> numeric:
-        """Spacing between subfigures."""
+        """Spacing between subfigures in [mm]"""
         return self._gap_between
 
     @gap_between.setter
@@ -80,7 +100,7 @@ class SVGSubFigure:
 
     @property
     def gap_label(self) -> numeric:
-        "Spacing between subfigure and label"
+        "Spacing between each subfigure and its label [mm]"
         return self._gap_label
 
     @gap_label.setter
@@ -89,7 +109,7 @@ class SVGSubFigure:
 
     @property
     def height(self) -> numeric:
-        """Height of the figure."""
+        """Height of the figure in [px]"""
         return self._height
 
     @height.setter
@@ -97,8 +117,17 @@ class SVGSubFigure:
         self._height = h
 
     @property
+    def index_offset(self) -> int:
+        """Index of the first subfigure image"""
+        return self._index_offset
+
+    @index_offset.setter
+    def index_offset(self, h: int):
+        self._index_offset = h
+
+    @property
     def width(self) -> numeric:
-        """Width of the figure."""
+        """Width of the figure in [px]"""
         return self._width
 
     @width.setter
@@ -109,16 +138,16 @@ class SVGSubFigure:
     def size(self) -> tuple[numeric, numeric]:
         return (self.width, self.height)
 
-    def add_child(self, child: Path) -> SVGSubFigure:
+    def add_child(self, child: Path) -> Self:
         self._children.append(child)
         return self
 
-    def add_children(self, children: tuple[Path, ...]) -> SVGSubFigure:
+    def add_children(self, children: tuple[Path, ...]) -> Self:
         """Adds subimages to the figure."""
         self._children.extend(children)
         return self
 
-    def save(self, path: Path) -> SVGSubFigure:
+    def save(self, path: Path) -> Self:
         """Save the total figure to the specified path."""
 
         w_netto = self.width - self.gap_between * (len(self._children) - 1)
@@ -195,9 +224,7 @@ class SVGSubFigure:
                 with pth_subfig.open(mode="rb") as f:
                     img_encoded = base64.b64encode(f.read())
 
-                img = etree.SubElement(
-                    svg, f"{{{self.NS_SVG}}}image", id=f"subfig-{no}"
-                )
+                img = etree.SubElement(svg, f"{{{self.NS_SVG}}}image", id=f"subfig-{no}")
                 img.set(
                     f"{{{self.NS_XLINK}}}href",
                     f"data:image/{format};base64,{img_encoded.decode('utf-8')}",
@@ -214,18 +241,17 @@ class SVGSubFigure:
             label.set("vertical-align", "hanging")
             label.set("font-size", str(self.font_size))
             label.set("font-family", self.font_family)
-            label.text = f"({chr(97 + no)})"
+            label.text = f"({chr(97 + self.index_offset + no)})"
 
             x += w_frac[no] + self.gap_between
 
         tree = etree.ElementTree(svg)
-        tree.write(path, pretty_print=True, xml_declaration=True, encoding="utf-8")
+        tree.write(path, xml_declaration=True, encoding="utf-8")
 
         return self
 
 
-def convert_svg(pth: Path):
+def convert_svg(pth: Path, formats: str = "pdf,png,svg"):
     subprocess.call(
-        'inkscape --export-type="pdf,png,svg" --export-overwrite -d 600 -D -T '
-        + str(pth)
+        f'inkscape --export-type="{formats}" --export-overwrite -d 600 -D -T ' + str(pth)
     )
