@@ -1,13 +1,13 @@
-import svgsubfig.utility as util
 import argparse
-
-from svgsubfig import SVGSubFigure
 from pathlib import Path
+
+import svgsubfig.utility as util
+from svgsubfig import SVGSubFigure
 
 # initialize argument parser
 parser = argparse.ArgumentParser("SVGSubFig generator")
 parser.add_argument("config")
-parser.add_argument("--noconvert", action='store_true')
+parser.add_argument("--noconvert", action="store_true")
 args = parser.parse_args()
 
 # configuration file path

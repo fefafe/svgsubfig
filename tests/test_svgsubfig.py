@@ -1,9 +1,8 @@
 import hashlib
-import io
-import svgsubfig.utility as util
-
-from svgsubfig import SVGSubFigure
 from pathlib import Path
+
+import svgsubfig.utility as util
+from svgsubfig import SVGSubFigure
 
 pth_config = Path("./tests/plots.json")
 pth_svg = Path("./assets/plots.svg")
