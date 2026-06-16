@@ -36,12 +36,17 @@ Create a JSON configuration file with the following structure, use relative file
     "images": [
         "img/dog.jpeg",
         "img/population.svg"
+    ],
+    "description": [
+        "A dog.",
+        "The dogs population."
     ]
 }
 ```
 
 Following keys are available for the config file:
 
+- ``description``: Text to be added after each label.
 - ``font-family``: Typeface used in the SVG file for text.
 - ``font-size``: Size of the labeling of the images in **pt**.
 - ``gab-between``: Spacing between the subimages in **mm**.

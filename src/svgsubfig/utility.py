@@ -29,6 +29,7 @@ class SVGSubFigure:
 
     def __init__(self):
         self._children = []
+        self._description = []
         self._font_size = 12
         self._font_family = "Arial, Helvetica, sans-serif"
         self._gap_between = 20
@@ -54,6 +55,9 @@ class SVGSubFigure:
             if "index-offset" in data:
                 ins._index_offset = data["index-offset"] * MM2PX
 
+            if "description" in data:
+                ins._description = data["description"]
+
             if "images" in data:
                 for pth_img in data["images"]:
                     ins.add_child(pth.parent / pth_img)
@@ -68,6 +72,15 @@ class SVGSubFigure:
     @children.setter
     def children(self, f: list[Path]):
         self._children = f
+
+    @property
+    def description(self) -> list[str]:
+        """Descriptions to add after the labels"""
+        return self._description
+
+    @description.setter
+    def description(self, f: list[str]):
+        self._description = f
 
     @property
     def font_family(self) -> str:
@@ -243,7 +256,13 @@ class SVGSubFigure:
             label.set("vertical-align", "hanging")
             label.set("font-size", str(self.font_size))
             label.set("font-family", self.font_family)
-            label.text = f"({chr(97 + self.index_offset + no)})"
+
+            text = f"({chr(97 + self.index_offset + no)})"
+
+            if len(self.description) >= no:
+                text = text + f" {self.description[no]}"
+
+            label.text = text
 
             x += w_frac[no] + self.gap_between
 
