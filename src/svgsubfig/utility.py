@@ -259,7 +259,7 @@ class SVGSubFigure:
 
             text = f"({chr(97 + self.index_offset + no)})"
 
-            if len(self.description) >= no:
+            if len(self.description) - 1 >= no:
                 text = text + f" {self.description[no]}"
 
             label.text = text
