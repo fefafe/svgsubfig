@@ -53,7 +53,7 @@ class SVGSubFigure:
             ins._width = data["width"] * MM2PX
 
             if "index-offset" in data:
-                ins._index_offset = data["index-offset"] * MM2PX
+                ins._index_offset = data["index-offset"]
 
             if "description" in data:
                 ins._description = data["description"]
