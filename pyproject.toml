@@ -1,6 +1,6 @@
 [project]
 name = "svgsubfig"
-version = "0.2.0"
+version = "0.2.2"
 description = "Compose raster and vector images to publication-ready figures for scientific journals"
 authors = [{ name = "Felix Faber", email = "felix.faber@ovgu.de" }]
 readme = "README.md"
