@@ -7,5 +7,10 @@
     "images": [
         "../assets/plot_1.svg",
         "../assets/plot_2.png"
+    ],
+    "index-offset": 3,
+    "description": [
+        "Dog",
+        "Cat"
     ]
 }
