@@ -5,7 +5,7 @@ description = "Compose raster and vector images to publication-ready figures for
 authors = [{ name = "Felix Faber", email = "felix.faber@ovgu.de" }]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["lxml (>=6.0.2,<7.0.0)", "pillow (>=12.1.1,<13.0.0)", "fonttools (>=4.66.0,<5.0.0)"]
+dependencies = ["lxml (>=5.0.0)", "pillow (>=10.1.0)", "fonttools (>=4.43.0)"]
 license = "MIT"
 
 [project.urls]
