@@ -148,6 +148,7 @@ class SVGSubFigure:
         self._gap_margin = None
         self._gap_row = None
         self._index_offset = 0
+        self._labels = True
         self._margins = {}
         self._margin_sizes = {}
         self._width = 180
@@ -161,11 +162,21 @@ class SVGSubFigure:
 
         with pth.open(encoding="utf-8", mode="r") as f:
             data = json.load(f)
-            ins._font_size = data["font-size"] * PT2PX
-            ins._font_family = data["font-family"]
             ins._gap_between = data["gap-between"] * MM2PX
-            ins._gap_label = data["gap-label"] * MM2PX
             ins._width = data["width"] * MM2PX
+
+            # the labels' typeface and gap may be left out, e.g. without labels
+            if "font-size" in data:
+                ins._font_size = data["font-size"] * PT2PX
+
+            if "font-family" in data:
+                ins._font_family = data["font-family"]
+
+            if "gap-label" in data:
+                ins._gap_label = data["gap-label"] * MM2PX
+
+            if "labels" in data:
+                ins._labels = bool(data["labels"])
 
             if "gap-margin" in data:
                 ins._gap_margin = data["gap-margin"] * MM2PX
@@ -286,8 +297,9 @@ class SVGSubFigure:
 
     @property
     def gap_row(self) -> numeric:
-        """Spacing between the labels of a row and the next row in [px], unless set
-        the same as ``gap_between``"""
+        """Spacing between the labels of a row and the next row in [px], or between
+        the rows of subfigures if they are not labeled, unless set the same as
+        ``gap_between``"""
         return self._gap_between if self._gap_row is None else self._gap_row
 
     @gap_row.setter
@@ -311,6 +323,16 @@ class SVGSubFigure:
     @index_offset.setter
     def index_offset(self, h: int):
         self._index_offset = h
+
+    @property
+    def labels(self) -> bool:
+        """Whether a label is set below each subfigure, e.g. ``(a)``, or the
+        subfigures are arranged in their rows alone"""
+        return self._labels
+
+    @labels.setter
+    def labels(self, f: bool):
+        self._labels = f
 
     @property
     def margins(self) -> dict[str, Path]:
@@ -408,12 +430,15 @@ class SVGSubFigure:
         first row to the bottom of the last row's subfigures. The figure spans
         ``width`` and ends right below the labels of the last row, unless the margins
         extend further.
+
+        Without ``labels``, the rows are kept ``gap_row`` apart from each other and the
+        figure ends right below the last row's subfigures instead.
         """
 
         svg = etree.Element(f"{{{self.NS_SVG}}}svg", nsmap=self.NSMAP)
 
         # subfigures and labels of each row, along with the extent of the labels' ink
-        # above and below their common baseline
+        # above and below their common baseline, which is empty without labels
         rows = []
         no = 0
 
@@ -422,12 +447,15 @@ class SVGSubFigure:
                 self._load_image(pth, f"subfig-{no + i}", f"img-{no + i}-")
                 for i, pth in enumerate(row)
             ]
-            labels = [self._label(no + i) for i in range(len(row))]
+            labels = [self._label(no + i) for i in range(len(row))] if self.labels else []
             extents = [self._label_extent(runs) for runs in labels]
-            ascent = max(top for top, _ in extents)
-            descent = max(bottom for _, bottom in extents)
+            ascent = max((top for top, _ in extents), default=0.0)
+            descent = max((bottom for _, bottom in extents), default=0.0)
             rows.append((subfigs, labels, ascent, descent))
             no += len(row)
+
+        # unlabeled subfigures leave no gap for labels below them
+        gap_label = self.gap_label if self.labels else 0.0
 
         margins = {
             side: self._load_image(pth, f"margin-{side}", f"img-{side}-")
@@ -443,7 +471,7 @@ class SVGSubFigure:
             -self.gap_between * (len(subfigs) - 1) / aspect
             for (subfigs, *_), aspect in zip(rows, aspects)
         ) + sum(
-            self.gap_label + ascent + descent + self.gap_row
+            gap_label + ascent + descent + self.gap_row
             for _, _, ascent, descent in rows[:-1]
         )
 
@@ -522,13 +550,15 @@ class SVGSubFigure:
         for (subfigs, labels, ascent, descent), aspect in zip(rows, aspects):
 
             h = (w_rows - self.gap_between * (len(subfigs) - 1)) / aspect
-            baseline = y + h + self.gap_label + ascent
+            baseline = y + h + gap_label + ascent
             x = x_rows
 
-            for picture, runs in zip(subfigs, labels):
+            for i, picture in enumerate(subfigs):
                 w = h * picture.width / picture.height
                 self._place_image(svg, picture, x, y, w, h)
-                self._add_label(svg, no, x + 0.5 * w, baseline, runs)
+
+                if labels:
+                    self._add_label(svg, no, x + 0.5 * w, baseline, labels[i])
 
                 x += w + self.gap_between
                 no += 1

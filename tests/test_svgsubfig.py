@@ -1,6 +1,7 @@
 import hashlib
 import json
 import subprocess
+import warnings
 from pathlib import Path
 
 import pytest
@@ -154,7 +155,9 @@ def test_matlab_export_formats_agree(tmp_path):
 
 
 def _rows_config(tmp_path: Path, **kwargs) -> Path:
-    """Writes a figure configuration of three rows, the second of three subfigures."""
+    """Writes a figure configuration of three rows, the second of three subfigures.
+
+    Keys given as ``None`` are left out of the configuration."""
 
     pth_png = Path("./assets/plot_2.png").resolve()
     pth_svg = Path("./assets/plot_1.svg").resolve()
@@ -174,7 +177,10 @@ def _rows_config(tmp_path: Path, **kwargs) -> Path:
     } | kwargs
 
     pth_config = tmp_path / "rows.json"
-    pth_config.write_text(json.dumps(config), encoding="utf-8")
+    pth_config.write_text(
+        json.dumps({key: value for key, value in config.items() if value is not None}),
+        encoding="utf-8",
+    )
 
     return pth_config
 
@@ -327,6 +333,57 @@ def test_missing_font_falls_back(tmp_path):
     assert height == pytest.approx(
         h + fig.gap_label + sum(FALLBACK_EXTENT) * fig.font_size
     )
+
+
+def test_without_labels(tmp_path):
+
+    assert SVGSubFigure().labels
+
+    # unlabeled subfigures need neither a typeface nor a gap to their labels
+    fig = SVGSubFigure.from_json(
+        _rows_config(
+            tmp_path,
+            **{
+                "labels": False,
+                "gap-row": 3,
+                "font-size": None,
+                "font-family": None,
+                "gap-label": None,
+            },
+        )
+    )
+
+    assert not fig.labels
+
+    # nor is a font looked up for them
+    fig.font_family = "No Such Font"
+    pth_svg = tmp_path / "rows.svg"
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        fig.save(pth_svg)
+
+    root = etree.parse(pth_svg).getroot()
+    geometry = _subfigure_geometry(pth_svg)
+
+    assert root.findall("{http://www.w3.org/2000/svg}text") == []
+
+    # the rows follow each other at gap_row and still fill the width, and the figure
+    # ends at the bottom of the last row's subfigures
+    no = 0
+    y_next = 0.0
+
+    for row in fig.rows:
+        subfigs = geometry[no:][: len(row)]
+        no += len(row)
+        _, y, _, h = subfigs[0]
+
+        assert y == pytest.approx(y_next)
+        assert subfigs[-1][0] + subfigs[-1][2] == pytest.approx(fig.width)
+
+        y_next = y + h + fig.gap_row
+
+    assert _height(pth_svg) == pytest.approx(y + h)
 
 
 # -----------------------------------------------------------------------------

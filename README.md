@@ -6,7 +6,7 @@
 
 A python package for swift arrangement of raster images and vector graphics into a single figure based on SVG.
 
-This package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals. A label is inserted below each subimage, e.g. ``(a)``, ``(b)``, ...
+This package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals. A label is inserted below each subimage, e.g. ``(a)``, ``(b)``, ..., unless the images are to be arranged without labels.
 
 Font family, size and gaps can be adjusted based on a JSON configuration. An example figure created with ``svgsubfig`` could look like this:
 
@@ -55,6 +55,7 @@ Following keys are available for the config file:
 - ``gap-row``: Spacing between the labels of a row and the images of the next row in **mm**, defaults to ``gap-between``.
 - ``images``: Array of file paths of the images to include into the figure, or an array of such arrays to arrange them in rows.
 - ``index-offset``: Offset of the first subimage index, e.g. if ``index-offset = 3``, the first label will be ``(d)``
+- ``labels``: Whether to label the subimages, ``true`` by default, see below.
 - ``margin``: Images in the margins around the subimages, by side, optionally with their width or height, see below.
 - ``width``: Width of the figure in **mm**.
 
@@ -108,6 +109,20 @@ The image is centered along its side: to the left and right on the height from t
 #### Labels
 
 The labels of a row share a common baseline. The gaps are measured to the ink of the labels, i.e. ``gap-label`` from the images to the tallest glyph and ``gap-row`` from the deepest glyph to the next row, and the figure ends right below the labels of the last row, unless there is an image in the bottom margin. To place the labels exactly, the typeface of ``font-family`` has to be installed, otherwise approximate font metrics are used and a warning is issued.
+
+To arrange the images without any labels, set ``labels`` to ``false``. The rows are then kept ``gap-row`` apart from each other, and the figure ends right below the images of the last row. ``font-family``, ``font-size`` and ``gap-label`` can be left out then, while ``description`` and ``index-offset`` have no effect:
+
+```json
+{
+    "gap-between": 2,
+    "width": 150,
+    "labels": false,
+    "images": [
+        ["img/dog.jpeg", "img/cat.jpeg"],
+        "img/population.svg"
+    ]
+}
+```
 
 #### Sub- and superscripts
 
