@@ -206,6 +206,16 @@ def test_as_rows():
     assert util.as_rows(["a", ["b", "c"]]) == [["a"], ["b", "c"]]
 
 
+def test_per_image():
+
+    rows = [["a", "b"], ["c"], ["d"]]
+
+    # flat arrays are taken as they are, nested ones are filled up row by row
+    assert util.per_image([1, 2], rows, 0) == [1, 2]
+    assert util.per_image([[1], 2], rows, 0) == [1, 0, 2]
+    assert util.per_image([[1, 2, 3], []], rows, 0) == [1, 2, 0]
+
+
 def test_rows_from_json(tmp_path):
 
     fig = SVGSubFigure.from_json(_rows_config(tmp_path))
@@ -384,6 +394,51 @@ def test_without_labels(tmp_path):
         y_next = y + h + fig.gap_row
 
     assert _height(pth_svg) == pytest.approx(y + h)
+
+
+def test_labels_per_image(tmp_path):
+
+    # labels follow the rows of the images, and images missing from them are labeled
+    fig = SVGSubFigure.from_json(
+        _rows_config(
+            tmp_path, **{"labels": [[False, True], [False, False, False]], "gap-row": 3}
+        )
+    )
+
+    assert fig.labels == [False, True, False, False, False]
+
+    pth_svg = tmp_path / "rows.svg"
+    fig.save(pth_svg)
+
+    root = etree.parse(pth_svg).getroot()
+    geometry = _subfigure_geometry(pth_svg)
+
+    # the letters skip the unlabeled images, the descriptions stay with theirs
+    assert {
+        label.get("id"): "".join(label.itertext())
+        for label in root.findall("{http://www.w3.org/2000/svg}text")
+    } == {"label-1": "(a) Cat", "label-5": "(b) Wide"}
+
+    # the first row leaves room for its label, the second one for none
+    _, y_1, _, h_1 = geometry[0]
+    _, y_2, _, h_2 = geometry[2]
+    _, y_3, _, h_3 = geometry[5]
+
+    assert y_2 > y_1 + h_1 + fig.gap_label + fig.gap_row
+    assert y_3 == pytest.approx(y_2 + h_2 + fig.gap_row)
+    assert _height(pth_svg) > y_3 + h_3 + fig.gap_label
+
+    # a flat array is taken in the order of the images
+    fig.labels = [True, False, True]
+
+    assert [fig._labeled(no) for no in range(len(fig.children))] == [
+        True,
+        False,
+        True,
+        True,
+        True,
+        True,
+    ]
 
 
 # -----------------------------------------------------------------------------

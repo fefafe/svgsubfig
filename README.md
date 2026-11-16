@@ -6,7 +6,7 @@
 
 A python package for swift arrangement of raster images and vector graphics into a single figure based on SVG.
 
-This package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals. A label is inserted below each subimage, e.g. ``(a)``, ``(b)``, ..., unless the images are to be arranged without labels.
+This package is focussed on the preparation of high quality figures that consist of several subimages, both vector and raster graphics, for publication in scientific journals. A label is inserted below each subimage, e.g. ``(a)``, ``(b)``, ..., unless all or some of the images are to be arranged without labels.
 
 Font family, size and gaps can be adjusted based on a JSON configuration. An example figure created with ``svgsubfig`` could look like this:
 
@@ -55,7 +55,7 @@ Following keys are available for the config file:
 - ``gap-row``: Spacing between the labels of a row and the images of the next row in **mm**, defaults to ``gap-between``.
 - ``images``: Array of file paths of the images to include into the figure, or an array of such arrays to arrange them in rows.
 - ``index-offset``: Offset of the first subimage index, e.g. if ``index-offset = 3``, the first label will be ``(d)``
-- ``labels``: Whether to label the subimages, ``true`` by default, see below.
+- ``labels``: Whether to label the subimages, ``true`` by default, either for all of them or per image as an array of booleans like ``description``, see below.
 - ``margin``: Images in the margins around the subimages, by side, optionally with their width or height, see below.
 - ``width``: Width of the figure in **mm**.
 
@@ -123,6 +123,21 @@ To arrange the images without any labels, set ``labels`` to ``false``. The rows 
     ]
 }
 ```
+
+To leave out the labels of some images only, give ``labels`` as an array of booleans, either flat in the order of the images or nested like ``images``, where images without an entry are labeled. The letters skip the unlabeled images, while the descriptions stay with their images. A row of which no image is labeled leaves no room for labels, like a figure without any:
+
+```json
+{
+    "images": [
+        ["img/dog.jpeg", "img/legend.svg"],
+        ["img/cat.jpeg", "img/mouse.jpeg"]
+    ],
+    "labels": [[true, false], [true, true]],
+    "description": [["A dog."], ["A cat.", "A mouse."]]
+}
+```
+
+Here, the dog, the cat and the mouse are labeled ``(a)``, ``(b)`` and ``(c)``.
 
 #### Sub- and superscripts
 

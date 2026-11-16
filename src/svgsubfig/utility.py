@@ -113,6 +113,24 @@ def as_rows(items: list) -> list[list]:
     return [item if isinstance(item, list) else [item] for item in items]
 
 
+def per_image(values: list, rows: list[list], fill) -> list:
+    """Reads values given for the images, either as a flat JSON array in their order or
+    nested like their rows, into a flat list in their order.
+
+    Values missing from a row of a nested array are filled in, while a flat array is
+    taken as it is.
+    """
+
+    if not any(isinstance(value, list) for value in values):
+        return values
+
+    return [
+        value
+        for row, row_values in zip(rows, as_rows(values))
+        for value in (row_values + [fill] * len(row))[: len(row)]
+    ]
+
+
 class Picture(NamedTuple):
     """An image read into an element that is yet to be placed in the figure."""
 
@@ -148,7 +166,7 @@ class SVGSubFigure:
         self._gap_margin = None
         self._gap_row = None
         self._index_offset = 0
-        self._labels = True
+        self._labels: bool | list[bool] = True
         self._margins = {}
         self._margin_sizes = {}
         self._width = 180
@@ -175,9 +193,6 @@ class SVGSubFigure:
             if "gap-label" in data:
                 ins._gap_label = data["gap-label"] * MM2PX
 
-            if "labels" in data:
-                ins._labels = bool(data["labels"])
-
             if "gap-margin" in data:
                 ins._gap_margin = data["gap-margin"] * MM2PX
 
@@ -191,18 +206,18 @@ class SVGSubFigure:
                 for row in as_rows(data["images"]):
                     ins.add_row(pth.parent / pth_img for pth_img in row)
 
+            # nested descriptions and labels follow the rows of the images
             if "description" in data:
-                description = data["description"]
+                ins._description = per_image(data["description"], ins.rows, "")
 
-                # nested descriptions follow the rows of the images
-                if any(isinstance(d, list) for d in description):
-                    description = [
-                        d
-                        for row, row_description in zip(ins.rows, as_rows(description))
-                        for d in (row_description + [""] * len(row))[: len(row)]
-                    ]
-
-                ins._description = description
+            # labels are set for all images or per image, as an array of booleans
+            if "labels" in data:
+                labels = data["labels"]
+                ins._labels = (
+                    [bool(label) for label in per_image(labels, ins.rows, True)]
+                    if isinstance(labels, list)
+                    else bool(labels)
+                )
 
             if "margin" in data:
                 for side, margin in data["margin"].items():
@@ -298,8 +313,8 @@ class SVGSubFigure:
     @property
     def gap_row(self) -> numeric:
         """Spacing between the labels of a row and the next row in [px], or between
-        the rows of subfigures if they are not labeled, unless set the same as
-        ``gap_between``"""
+        the subfigures of a row without labels and the next row, unless set the same
+        as ``gap_between``"""
         return self._gap_between if self._gap_row is None else self._gap_row
 
     @gap_row.setter
@@ -325,13 +340,13 @@ class SVGSubFigure:
         self._index_offset = h
 
     @property
-    def labels(self) -> bool:
-        """Whether a label is set below each subfigure, e.g. ``(a)``, or the
-        subfigures are arranged in their rows alone"""
+    def labels(self) -> bool | list[bool]:
+        """Whether a label is set below the subfigures, e.g. ``(a)``, either for all
+        of them or per subfigure, row by row, where missing ones are labeled"""
         return self._labels
 
     @labels.setter
-    def labels(self, f: bool):
+    def labels(self, f: bool | list[bool]):
         self._labels = f
 
     @property
@@ -431,31 +446,42 @@ class SVGSubFigure:
         ``width`` and ends right below the labels of the last row, unless the margins
         extend further.
 
-        Without ``labels``, the rows are kept ``gap_row`` apart from each other and the
-        figure ends right below the last row's subfigures instead.
+        Subfigures that are not labeled, see ``labels``, are skipped by the letters of
+        the labels. A row without any labels leaves no room for them, so it is kept
+        ``gap_row`` apart from the next row, or ends the figure, right below its
+        subfigures.
         """
 
         svg = etree.Element(f"{{{self.NS_SVG}}}svg", nsmap=self.NSMAP)
 
-        # subfigures and labels of each row, along with the extent of the labels' ink
-        # above and below their common baseline, which is empty without labels
+        # subfigures and labels of each row, ``None`` for those without one, along with
+        # the distance from the bottom of the subfigures to the labels' common baseline
+        # and the extent of their ink below it, both naught for a row without labels
         rows = []
         no = 0
+        letter = 0
 
         for row in filter(None, self._rows):
             subfigs = [
                 self._load_image(pth, f"subfig-{no + i}", f"img-{no + i}-")
                 for i, pth in enumerate(row)
             ]
-            labels = [self._label(no + i) for i in range(len(row))] if self.labels else []
-            extents = [self._label_extent(runs) for runs in labels]
-            ascent = max((top for top, _ in extents), default=0.0)
-            descent = max((bottom for _, bottom in extents), default=0.0)
-            rows.append((subfigs, labels, ascent, descent))
-            no += len(row)
+            labels: list[list[Run] | None] = []
 
-        # unlabeled subfigures leave no gap for labels below them
-        gap_label = self.gap_label if self.labels else 0.0
+            for i in range(len(row)):
+                if self._labeled(no + i):
+                    labels.append(self._label(no + i, letter))
+                    letter += 1
+                else:
+                    labels.append(None)
+
+            extents = [self._label_extent(runs) for runs in labels if runs is not None]
+            to_baseline = (
+                self.gap_label + max(top for top, _ in extents) if extents else 0.0
+            )
+            descent = max((bottom for _, bottom in extents), default=0.0)
+            rows.append((subfigs, labels, to_baseline, descent))
+            no += len(row)
 
         margins = {
             side: self._load_image(pth, f"margin-{side}", f"img-{side}-")
@@ -471,8 +497,8 @@ class SVGSubFigure:
             -self.gap_between * (len(subfigs) - 1) / aspect
             for (subfigs, *_), aspect in zip(rows, aspects)
         ) + sum(
-            gap_label + ascent + descent + self.gap_row
-            for _, _, ascent, descent in rows[:-1]
+            to_baseline + descent + self.gap_row
+            for _, _, to_baseline, descent in rows[:-1]
         )
 
         # a subfigure is scaled from its physical size by the height of its row over
@@ -547,18 +573,18 @@ class SVGSubFigure:
         height = y
         no = 0
 
-        for (subfigs, labels, ascent, descent), aspect in zip(rows, aspects):
+        for (subfigs, labels, to_baseline, descent), aspect in zip(rows, aspects):
 
             h = (w_rows - self.gap_between * (len(subfigs) - 1)) / aspect
-            baseline = y + h + gap_label + ascent
+            baseline = y + h + to_baseline
             x = x_rows
 
-            for i, picture in enumerate(subfigs):
+            for picture, runs in zip(subfigs, labels):
                 w = h * picture.width / picture.height
                 self._place_image(svg, picture, x, y, w, h)
 
-                if labels:
-                    self._add_label(svg, no, x + 0.5 * w, baseline, labels[i])
+                if runs is not None:
+                    self._add_label(svg, no, x + 0.5 * w, baseline, runs)
 
                 x += w + self.gap_between
                 no += 1
@@ -586,14 +612,24 @@ class SVGSubFigure:
 
         return self
 
-    def _label(self, no: int) -> list[Run]:
+    def _labeled(self, no: int) -> bool:
+        """Whether a subfigure is labeled, by its number in the figure."""
+
+        if isinstance(self.labels, bool):
+            return self.labels
+
+        return no >= len(self.labels) or bool(self.labels[no])
+
+    def _label(self, no: int, letter: int) -> list[Run]:
         """Label of a subfigure as runs of text, see ``parse_scripts``.
 
-        The label is followed by the description of the subfigure if there is one,
-        which may contain sub- and superscripts in TeX notation.
+        The label bears the letter of the given index, which counts the labeled
+        subfigures from ``index_offset`` on. It is followed by the description of the
+        subfigure if there is one, which may contain sub- and superscripts in TeX
+        notation.
         """
 
-        text = f"({chr(97 + self.index_offset + no)})"
+        text = f"({chr(97 + self.index_offset + letter)})"
 
         if no < len(self.description) and self.description[no]:
             # the leading blank puts the description's first run on the baseline
